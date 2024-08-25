@@ -26,7 +26,7 @@ export function Topbarlogin() {
           <div onClick={()=>{
             navigate('/userprofile')
           }} className="rounded-full bg-green-500 text-center py-2 px-3.5">
-              {allInfo.name[0].toUpperCase()}
+              {allInfo.name?allInfo.name[0].toUpperCase():"?"}
           </div>
           <div className='flex pt-2 smd:pt-1 flex-col h-full justify-center'>
             <span onClick={()=>{

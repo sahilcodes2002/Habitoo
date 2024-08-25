@@ -76,7 +76,12 @@ export function Signup() {
                     <div className="pl-3 mt-4 pr-3">
                         <Button
                             onClick={async () => {
-                                setLoading(true)
+                                if(firstName=="" || username=="" ||password==""){
+                                    alert("fill all the credentials")
+                                    
+                                }
+                                else{
+                                    setLoading(true)
                                 try {
                                     const response = await axios.post("https://honoprisma.codessahil.workers.dev/signup", {
                                         name: firstName,
@@ -97,6 +102,7 @@ export function Signup() {
                                     console.error("Error during signup", error)
                                 } finally {
                                     setLoading(false)
+                                }
                                 }
                             }}
                             name={"Sign up"}

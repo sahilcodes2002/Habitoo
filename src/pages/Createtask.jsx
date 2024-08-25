@@ -548,7 +548,7 @@ function TaskManager() {
             title: projectName,
             description: '', // You can add a project description here if needed
             link: '', // Add any project link if necessary
-            folder: 1, // Specify the folder ID if applicable
+            folder: 4, // Specify the folder ID if applicable
             tasks: tasks.map(task => ({
                 work: task.title,
                 description: task.description,

@@ -35,12 +35,14 @@ function WorkDurationGraph({ data }) {
   }
 
   const groupedData = data.reduce((acc, current) => {
-    //const date = new Date(current.dateCreated).toLocaleDateString();
+    //console.log(current);
     const date1 = new Date(current.dateCreated);
-      var day = date1.getUTCDate().toString(); 
-    var month = (date1.getUTCMonth() + 1).toString(); 
-    var year = date1.getUTCFullYear().toString();
+      var day = date1.getDate().toString(); 
+    var month = (date1.getMonth() + 1).toString(); 
+    var year = date1.getFullYear().toString();
     const date  = month+'/'+day+'/'+year; 
+    //console.log(current.dateCreated);
+    //console.log(date);
     if (!acc[date]) {
       acc[date] = { totalMinutes: 0, entries: [] };
     }
@@ -54,7 +56,7 @@ function WorkDurationGraph({ data }) {
   );
 
   const sections = [];
-  let x = sortedDates.length;
+  let x = 5;
   if (screenWidth <= 640) {
     x = 5;
   } else if (screenWidth <= 768) {
@@ -72,6 +74,7 @@ function WorkDurationGraph({ data }) {
     const sectionData = sortedDates.slice(i * x, (i + 1) * x);
     sections.push(sectionData);
   }
+  //console.log(sections);
 
   return (
     <div className="flex flex-col items-center justify-center space-y-12">
@@ -163,11 +166,13 @@ function ShowingInfo({ data, infofordate }) {
         const day = date.getDate();
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
+        
         if (
           day === infofordate.day &&
           month === infofordate.month &&
           year === infofordate.year
         ) {
+          //console.log(day+" "+month+" "+" "+year);
           return (
             <div key={x.id} className=" border-b mb-[2px] text-black justify-between ">
               <div className="flex space-x-10">
@@ -214,6 +219,7 @@ export function Workhistory() {
         );
         //console.log(response.data);
         setbackendData(response.data);
+
         setLoading(false);
       } catch (err) {
         setLoading(false);

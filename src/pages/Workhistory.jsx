@@ -35,7 +35,12 @@ function WorkDurationGraph({ data }) {
   }
 
   const groupedData = data.reduce((acc, current) => {
-    const date = new Date(current.dateCreated).toLocaleDateString();
+    //const date = new Date(current.dateCreated).toLocaleDateString();
+    const date1 = new Date(current.dateCreated);
+      var day = date1.getUTCDate().toString(); 
+    var month = (date1.getUTCMonth() + 1).toString(); 
+    var year = date1.getUTCFullYear().toString();
+    const date  = month+'/'+day+'/'+year; 
     if (!acc[date]) {
       acc[date] = { totalMinutes: 0, entries: [] };
     }

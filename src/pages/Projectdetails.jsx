@@ -7,7 +7,7 @@ import { info } from "../store/atoms/userinfo";
 import { allusers } from "../store/atoms/contacts";
 //import { set } from "date-fns";
 var projectdata1 = null;
-var  projectdate  = null;
+var projectdate = null;
 export function ProjectDetails() {
   const [projectData, setProjectData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,17 +19,13 @@ export function ProjectDetails() {
   const [invitedusers, setinvitedusers] = useState([]);
   const [allinfo, setinfo] = useRecoilState(info);
   const [coreprojectdata, setcoredata] = useState(null);
-  // useEffect(() => {
-  //     if (projectData) {
-  //       console.log(projectData);
-  //     } else {
-  //       console.log("Data is still loading or not available");
-  //     }
-  //   }, [projectData]);
+  const [refresh, setRefresh] = useState(false);
+  const [showinfo, setShowinfo] = useState(false);
+  const [showinfo1, setShowinfo1] = useState(false);
 
   useEffect(() => {
-    if(!localStorage.getItem('token')){
-      navigate('/')
+    if (!localStorage.getItem("token")) {
+      navigate("/");
     }
     setLoading(true);
     fetchAllUsers();
@@ -52,21 +48,20 @@ export function ProjectDetails() {
     }, 20000);
 
     return () => clearInterval(intervalId);
-  }, []);
-
+  }, [refresh]);
 
   async function checktoupdate() {
     if (projectdata1 || projectdata1 != null) {
       const simplifiedWorks = projectdata1.works.map((work) => ({
         id: work.id,
         assignto: work.assignto,
-        completed:work.completed
+        completed: work.completed,
       }));
 
       const simplifiedSubworks = projectdata1.subworks.map((subwork) => ({
         id: subwork.id,
         assignto: subwork.assignto,
-        completed:subwork.completed
+        completed: subwork.completed,
       }));
       try {
         const response = await axios.post(
@@ -115,18 +110,15 @@ export function ProjectDetails() {
 
       const data = await response.data.res;
       projectdata1 = data;
-      if(projectdate == null){
-        const isoDate =  data.created_at;
+      if (projectdate == null) {
+        const isoDate = data.created_at;
         const date = new Date(isoDate);
-        projectdate = date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
+        projectdate = date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
         });
-
       }
-      
-
 
       //console.log(data);
 
@@ -171,8 +163,6 @@ export function ProjectDetails() {
       //console.log("Error fetching invited user data:", err);
     }
   };
-
-  
 
   const fetchAllUsers = async () => {
     try {
@@ -282,14 +272,16 @@ export function ProjectDetails() {
   return (
     <div>
       <div className="flex justify-between">
-        <div className="p-2 mt-3 ml-1 cursor-pointer" onClick={()=>{
-          if(projectData.user_id === allinfo.id){
-            navigate('/userprojects')
-          }else{
-            navigate('/assignedprojects')
-          }
-            
-        }}>
+        <div
+          className="p-2 mt-3 ml-1 cursor-pointer"
+          onClick={() => {
+            if (projectData.user_id === allinfo.id) {
+              navigate("/userprojects");
+            } else {
+              navigate("/assignedprojects");
+            }
+          }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -343,12 +335,23 @@ export function ProjectDetails() {
         </div>
       </div>
       <div className="mt-3 flex justify-center">
-        <div className="font-serif text-2xl smd:text-4xl">{projectData.title} : <span className="text-lg smd:text-2xl font-light pb-1 text-gray-600">{projectdate}</span></div>
+        <div className="font-serif text-2xl smd:text-4xl">
+          {projectData.title} :{" "}
+          <span className="text-lg smd:text-2xl font-light pb-1 text-gray-600">
+            {projectdate}
+          </span>
+        </div>
       </div>
-      <div >
+      <div>
         {/* <ProjectTitlebar setShowModal={setShowModal} projectname ={projectData.title} ></ProjectTitlebar> */}
         {projectData && (
           <ProjectTaskManager
+            setShowinfo={setShowinfo}
+            setShowinfo1={setShowinfo1}
+            showinfo1={showinfo1}
+            showinfo={showinfo}
+            setRefresh={setRefresh}
+            id={id}
             projectTitle={projectData.title}
             initialTasks={projectData.tasks}
             projectData={projectData}
@@ -476,30 +479,37 @@ export function ProjectDetails() {
 }
 
 function ProjectTaskManager({
+  id,
+  setShowinfo,
+  setShowinfo1,
+  showinfo,
+  showinfo1,
+  setRefresh,
   projectTitle,
   initialTasks,
   projectData,
   allinfo,
   invitedusers,
-  projectdata1
+  projectdata1,
 }) {
   //console.log(projectData);
   const [tasks, setTasks] = useState(initialTasks);
   const [loading, setLoading] = useState(false);
+  const [showinfoofid, setShowinfoofid] = useState(null);
 
   // Toggle the completed state of a task or subtask
   const handleCheckboxChange = async (taskId, parentId) => {
     const updateTaskCompleted = (taskList, taskId) => {
-      if(parentId===null){
-        for(const it of projectdata1.works){
-          if(it.id == taskId){
-            it.completed=!it.completed;
+      if (parentId === null) {
+        for (const it of projectdata1.works) {
+          if (it.id == taskId) {
+            it.completed = !it.completed;
           }
         }
-      }else{
-        for(const it of projectdata1.subworks){
-          if(it.id == taskId){
-            it.completed=!it.completed;
+      } else {
+        for (const it of projectdata1.subworks) {
+          if (it.id == taskId) {
+            it.completed = !it.completed;
           }
         }
       }
@@ -585,17 +595,95 @@ function ProjectTaskManager({
   };
 
   // Render tasks and subtasks
+  async function handlesubtaskdelete (id){
+    
+    try{
+      setLoading(true);
+      await axios.post(
+        `https://honoprisma.codessahil.workers.dev/deletesubwork`,
+        {
+          id: parseInt(id)
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setLoading(false);
+    }catch(err){
+      alert(err);
+    }
+  }
+  async function handletaskdelete (id){
+    try{
+      setLoading(true);
+      await axios.post(
+        `https://honoprisma.codessahil.workers.dev/deletework`,
+        {
+          id: parseInt(id)
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setLoading(false);
+    }catch(err){
+      alert(err);
+    }
+  }
   const renderTasks = (taskList, parentId = null) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isUsing, setIsusing] = useState("");
     const [istask, setisTask] = useState(parentId);
+    //const [showinfo, setShowinfo] = useState(false);
+
     //console.log(taskList);
     return (
       <div
         className={`relative ${
           parentId ? "ml:6 smd:ml-8" : "ml-2 smd:ml-4"
-        } pl-6 border-l border-gray-500`}
+        } pl-[6px] border-l border-gray-500`}
       >
+        {showinfo && (
+          <div className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+            <div className="bg-white p-5 rounded shadow-lg relative">
+              <button
+                onClick={() => setShowinfo(false)}
+                className="absolute top-2 right-2 text-gray-600"
+              >
+                ✕
+              </button>
+              <ShowingInfo
+                setRefresh={setRefresh}
+                id={id}
+                showinfoofid={showinfoofid}
+                setShowinfo={setShowinfo}
+              />
+            </div>
+          </div>
+        )}
+        {showinfo1 && (
+          <div className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+            <div className="bg-white p-5 rounded shadow-lg relative">
+              <button
+                onClick={() => setShowinfo1(false)}
+                className="absolute top-2 right-2 text-gray-600"
+              >
+                ✕
+              </button>
+              <ShowingInfo1
+                setRefresh={setRefresh}
+                id={id}
+                setShowinfo1={setShowinfo1}
+              />
+            </div>
+          </div>
+        )}
         {taskList.map((task, index) => (
           <div key={task.id} className="relative mt-4">
             {/* Line connecting to the previous task */}
@@ -603,251 +691,326 @@ function ProjectTaskManager({
               <div className="absolute -left-1 top-0 h-full border-l border-gray-500"></div>
             )}
             {/* Task Box */}
-            <div
-              className={`relative  pl-2 pr-2 border rounded shadow-sm ${
-                parentId ? "border-gray-400" : "border-gray-200"
-              } ${task.completed == false ? "bg-blue-200" : "bg-green-200"}`}
-            >
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => {
-                    //console.log(projectData);
-                    if (
-                      projectData.user_id == allinfo.id ||
-                      allinfo.id == task.assignto
-                    ) {
-                      handleCheckboxChange(task.id, parentId);
-                    }
-                  }}
-                  className=" form-checkbox h-5 w-5 text-blue-500"
-                />
-                <div className="m-2 w-full">
-                  <div
-                    className={`${
-                      task.completed == false ? "bg-white" : "bg-green-100"
-                    } ml-1 p-1 border w-full flex-grow rounded-md`}
+
+            <div className="flex">
+              <div className="flex flex-col justify-center">
+                <button className={`${
+                        allinfo.id == projectData.user_id 
+                          ? ""
+                          : "hidden"
+                      } `} onClick={async()=>{
+                  if(parentId){
+                    await handlesubtaskdelete(task.id);
+                    setRefresh(x=>!x);
+                  }else{
+                    await handletaskdelete(task.id);
+                    setRefresh(x=>!x);
+                  }
+                }}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="3 0 24 24"
+                    stroke-width="0.5"
+                    stroke="currentColor"
+                    class={` size-5 smd:size-6`}
                   >
-                    {task.title}
-                  </div>
-                </div>
-                <div>
-                <div className={`${allinfo.id != projectData.user_id && task.assignto == allinfo.id?'':'hidden'} `}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-</svg>
-
-
-
-                    </div>
-                  <div
-                    className={`px-1 rounded-md bg-white  ${
-                      allinfo.id != projectData.user_id ? "hidden" : "bg-white"
-                    }`}
-                  >
-                    
-                    <div className=" pt-1 relative inline-block text-left">
-                      {/* Circular Icon */}
-                      <button
-                        onClick={() => {
-                          setIsOpen(!isOpen);
-                          setIsusing(task.id);
-                          setisTask(parentId);
-                        }}
-                        className="flex items-center justify-center w-6 h-6  bg-gray-300 rounded-full focus:outline-none"
-                      >
-                        <svg
-                          className="w-4 h-5"
-                          aria-hidden="true"
-                          fill="currentColor"
-                          viewBox="0 0 64 64"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <g id="_8-Add_Friend" data-name="8-Add Friend">
-                            <path
-                              className="fill-current text-gray-800"
-                              d="M61 24.44A30 30 0 0 1 54.34 52H45V38a1 1 0 0 0-.11-.45l-1-2a1 1 0 0 0-.5-.47l-6.63-2.87-.54-1.67A8.2 8.2 0 0 0 39 24v-8a1 1 0 0 0-.29-.71A9.73 9.73 0 0 0 32 13a9.73 9.73 0 0 0-6.71 2.29A1 1 0 0 0 25 16v8a8.2 8.2 0 0 0 2.77 6.54l-.54 1.67-6.63 2.87a1 1 0 0 0-.5.47l-1 2a1 1 0 0 0-.1.45v14H9.66A30 30 0 0 1 39.77 3l.52-1.93A32 32 0 1 0 63 23.94zm-34-8A8.31 8.31 0 0 1 32 15a8.31 8.31 0 0 1 5 1.47v4.39c-.5-.13-1-.38-1-.86a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1c0 .47-.5.72-1 .86zM27 24v-1.09A3.55 3.55 0 0 0 29.82 21h4.36A3.55 3.55 0 0 0 37 22.91V24c0 2.77-1.31 6-5 6s-5-3.23-5-6zm7.84 8.75L32 35.59l-2.84-2.84.38-1.19a7 7 0 0 0 4.9 0zM21 38.24l.73-1.46 6-2.61L31 37.41V41h2v-3.59l3.25-3.25 6 2.61.75 1.47V52h-3v-5h-2v5H26v-5h-2v5h-3zM32 62a29.88 29.88 0 0 1-20.37-8h40.74A29.88 29.88 0 0 1 32 62z"
-                            />
-                            <path
-                              className="fill-current text-gray-800"
-                              d="M32 8V6A25 25 0 0 0 7 31h2A23 23 0 0 1 32 8zM7 33h2v2H7zM52 24a12 12 0 1 0-12-12 12 12 0 0 0 12 12zm0-22a10 10 0 1 1-10 10A10 10 0 0 1 52 2z"
-                            />
-                            <path
-                              className="fill-current text-gray-800"
-                              d="M51 18h2v-5h5v-2h-5V6h-2v5h-5v2h5v5z"
-                            />
-                          </g>
-                        </svg>
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {isOpen && isUsing == task.id && istask == parentId && (
-                        <div className="absolute right-0 z-10 w-48 mt-2 origin-top-right bg-white border border-gray-300 rounded-md shadow-lg">
-                          <div className="py-1">
-                            <button
-                              onClick={async () => {
-                                //task id
-                                //parentid
-                                //x.user.id
-                                if (parentId == null) {
-                                  try {
-                                    setLoading(true);
-                                    await axios.post(
-                                      `https://honoprisma.codessahil.workers.dev/updatework`,
-                                      {
-                                        workid: task.id,
-                                        userid: allinfo.id,
-                                      },
-                                      {
-                                        headers: {
-                                          Authorization: `Bearer ${localStorage.getItem(
-                                            "token"
-                                          )}`,
-                                          "Content-Type": "application/json",
-                                        },
-                                      }
-                                    );
-                                    task.assignto = allinfo.id;
-                                    setIsOpen(false);
-                                    setLoading(false);
-                                  } catch (err) {
-                                    alert(err);
-                                  }
-                                } else {
-                                  try {
-                                    setLoading(true);
-                                    const res = await axios.post(
-                                      `https://honoprisma.codessahil.workers.dev/updatesubwork`,
-                                      {
-                                        workid: task.id,
-                                        userid: allinfo.id,
-                                      },
-                                      {
-                                        headers: {
-                                          Authorization: `Bearer ${localStorage.getItem(
-                                            "token"
-                                          )}`,
-                                          "Content-Type": "application/json",
-                                        },
-                                      }
-                                    );
-                                    task.assignto = allinfo.id;
-                                    setIsOpen(false);
-                                    setLoading(false);
-                                  } catch (err) {
-                                    alert(err);
-                                  }
-                                }
-                              }}
-                              // Adding a key prop is recommended when rendering lists
-                              className={`${
-                                task.assignto == allinfo.id
-                                  ? "bg-green-300"
-                                  : ""
-                              } block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100`}
-                            >
-                              Myself
-                            </button>
-                            {invitedusers
-                              .filter((x) => {
-                                //console.log(invitedusers[0].name);
-                                return x.accepted === true;
-                              })
-                              .map((x) => (
-                                <button
-                                  onClick={async () => {
-                                    //task id
-                                    //parentid
-                                    //x.user.id
-                                    if (parentId == null) {
-                                      try {
-                                        setLoading(true);
-                                        const res = await axios.post(
-                                          `https://honoprisma.codessahil.workers.dev/updatework`,
-                                          {
-                                            workid: task.id,
-                                            userid: x.user.id,
-                                          },
-                                          {
-                                            headers: {
-                                              Authorization: `Bearer ${localStorage.getItem(
-                                                "token"
-                                              )}`,
-                                              "Content-Type":
-                                                "application/json",
-                                            },
-                                          }
-                                        );
-                                        task.assignto = x.user.id;
-                                        setIsOpen(false);
-                                        setLoading(false);
-                                      } catch (err) {
-                                        alert(err);
-                                      }
-                                    } else {
-                                      try {
-                                        setLoading(true);
-                                        const res = await axios.post(
-                                          `https://honoprisma.codessahil.workers.dev/updatesubwork`,
-                                          {
-                                            workid: task.id,
-                                            userid: x.user.id,
-                                          },
-                                          {
-                                            headers: {
-                                              Authorization: `Bearer ${localStorage.getItem(
-                                                "token"
-                                              )}`,
-                                              "Content-Type":
-                                                "application/json",
-                                            },
-                                          }
-                                        );
-
-                                        task.assignto = x.user.id;
-                                        setIsOpen(false);
-                                        setLoading(false);
-                                      } catch (err) {
-                                        alert(err);
-                                      }
-                                    }
-                                  }}
-                                  key={x.id} // Adding a key prop is recommended when rendering lists
-                                  className={`${
-                                    task.assignto == x.user.id
-                                      ? "bg-green-300"
-                                      : ""
-                                  } block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100`}
-                                >
-                                  {x.user.name}
-                                </button>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                    />
+                  </svg>
+                </button>
               </div>
-              {task.description && (
-                <div className="pr-2 pt-1">
-                  <textarea
-                    className={`${
-                      task.completed == false ? "bg-while" : "bg-green-100"
-                    } ml-2 p-1 border rounded w-full`}
-                    placeholder="Task description"
-                    value={task.description}
-                    readOnly
+              <div
+                className={`relative flex-1 pl-1 pr-2 border rounded shadow-sm ${
+                  parentId ? "border-gray-400" : "border-gray-200"
+                } ${task.completed == false ? "bg-blue-200" : "bg-green-200"}`}
+              >
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => {
+                      //console.log(projectData);
+                      if (
+                        projectData.user_id == allinfo.id ||
+                        allinfo.id == task.assignto
+                      ) {
+                        handleCheckboxChange(task.id, parentId);
+                      }
+                    }}
+                    className=" form-checkbox h-5 w-5 text-blue-500"
                   />
+                  <div className="m-2 w-full">
+                    <div
+                      className={`${
+                        task.completed == false ? "bg-white" : "bg-green-100"
+                      } ml-1 p-1 border w-full flex-grow rounded-md`}
+                    >
+                      {task.title}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      className={`${
+                        allinfo.id != projectData.user_id &&
+                        task.assignto == allinfo.id
+                          ? ""
+                          : "hidden"
+                      } `}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
+                        />
+                      </svg>
+                    </div>
+
+                    <div>
+                      <div
+                        className={`px-[1px] pt-[2px] rounded-md bg-white  ${
+                          allinfo.id != projectData.user_id
+                            ? "hidden"
+                            : "bg-white"
+                        }`}
+                      >
+                        <div className=" pt-1 relative inline-block text-left">
+                          {/* Circular Icon */}
+                          <div className="flex ">
+                            <button
+                              onClick={() => {
+                                setIsOpen(!isOpen);
+                                setIsusing(task.id);
+                                setisTask(parentId);
+                              }}
+                              className="flex items-center justify-center w-5 h-6  bg-gray-300 rounded-full focus:outline-none"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                class="size-6"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              className={`${parentId ? "hidden" : ""}`}
+                              onClick={() => {
+                                //console.log(task.id);
+                                setShowinfoofid(task.id);
+                                setShowinfo(true);
+                              }}
+                            >
+                              <div>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke-width="1.5"
+                                  stroke="currentColor"
+                                  class="size-6"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 4.5v15m7.5-7.5h-15"
+                                  />
+                                </svg>
+                              </div>
+                            </button>
+                          </div>
+
+                          {/* Dropdown Menu */}
+                          {isOpen &&
+                            isUsing == task.id &&
+                            istask == parentId && (
+                              <div className="absolute right-0 z-10 w-48 mt-2 origin-top-right bg-white border border-gray-300 rounded-md shadow-lg">
+                                <div className="py-1">
+                                  <button
+                                    onClick={async () => {
+                                      //task id
+                                      //parentid
+                                      //x.user.id
+                                      if (parentId == null) {
+                                        try {
+                                          setLoading(true);
+                                          await axios.post(
+                                            `https://honoprisma.codessahil.workers.dev/updatework`,
+                                            {
+                                              workid: task.id,
+                                              userid: allinfo.id,
+                                            },
+                                            {
+                                              headers: {
+                                                Authorization: `Bearer ${localStorage.getItem(
+                                                  "token"
+                                                )}`,
+                                                "Content-Type":
+                                                  "application/json",
+                                              },
+                                            }
+                                          );
+                                          task.assignto = allinfo.id;
+                                          setIsOpen(false);
+                                          setLoading(false);
+                                        } catch (err) {
+                                          alert(err);
+                                        }
+                                      } else {
+                                        try {
+                                          setLoading(true);
+                                          const res = await axios.post(
+                                            `https://honoprisma.codessahil.workers.dev/updatesubwork`,
+                                            {
+                                              workid: task.id,
+                                              userid: allinfo.id,
+                                            },
+                                            {
+                                              headers: {
+                                                Authorization: `Bearer ${localStorage.getItem(
+                                                  "token"
+                                                )}`,
+                                                "Content-Type":
+                                                  "application/json",
+                                              },
+                                            }
+                                          );
+                                          task.assignto = allinfo.id;
+                                          setIsOpen(false);
+                                          setLoading(false);
+                                        } catch (err) {
+                                          alert(err);
+                                        }
+                                      }
+                                    }}
+                                    // Adding a key prop is recommended when rendering lists
+                                    className={`${
+                                      task.assignto == allinfo.id
+                                        ? "bg-green-300"
+                                        : ""
+                                    } block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100`}
+                                  >
+                                    Myself
+                                  </button>
+                                  {invitedusers
+                                    .filter((x) => {
+                                      //console.log(invitedusers[0].name);
+                                      return x.accepted === true;
+                                    })
+                                    .map((x) => (
+                                      <button
+                                        onClick={async () => {
+                                          //task id
+                                          //parentid
+                                          //x.user.id
+                                          if (parentId == null) {
+                                            try {
+                                              setLoading(true);
+                                              const res = await axios.post(
+                                                `https://honoprisma.codessahil.workers.dev/updatework`,
+                                                {
+                                                  workid: task.id,
+                                                  userid: x.user.id,
+                                                },
+                                                {
+                                                  headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem(
+                                                      "token"
+                                                    )}`,
+                                                    "Content-Type":
+                                                      "application/json",
+                                                  },
+                                                }
+                                              );
+                                              task.assignto = x.user.id;
+                                              setIsOpen(false);
+                                              setLoading(false);
+                                            } catch (err) {
+                                              alert(err);
+                                            }
+                                          } else {
+                                            try {
+                                              setLoading(true);
+                                              const res = await axios.post(
+                                                `https://honoprisma.codessahil.workers.dev/updatesubwork`,
+                                                {
+                                                  workid: task.id,
+                                                  userid: x.user.id,
+                                                },
+                                                {
+                                                  headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem(
+                                                      "token"
+                                                    )}`,
+                                                    "Content-Type":
+                                                      "application/json",
+                                                  },
+                                                }
+                                              );
+
+                                              task.assignto = x.user.id;
+                                              setIsOpen(false);
+                                              setLoading(false);
+                                            } catch (err) {
+                                              alert(err);
+                                            }
+                                          }
+                                        }}
+                                        key={x.id} // Adding a key prop is recommended when rendering lists
+                                        className={`${
+                                          task.assignto == x.user.id
+                                            ? "bg-green-300"
+                                            : ""
+                                        } block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100`}
+                                      >
+                                        {x.user.name}
+                                      </button>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-              {/* Render subtasks */}
-              {task.subtasks && task.subtasks.length > 0 && (
-                <div className="mt-2 pl-6 border-l border-gray-300">
-                  {renderTasks(task.subtasks, task.id)}
-                </div>
-              )}
+                {task.description && (
+                  <div className="pr-2 pt-1">
+                    <textarea
+                      className={`${
+                        task.completed == false ? "bg-while" : "bg-green-100"
+                      } ml-2 p-1 border rounded w-full`}
+                      placeholder="Task description"
+                      value={task.description}
+                      readOnly
+                    />
+                  </div>
+                )}
+                {/* Render subtasks */}
+                {task.subtasks && task.subtasks.length > 0 && (
+                  <div className="mt-2 pl-6 border-l border-gray-300">
+                    {renderTasks(task.subtasks, task.id)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -860,12 +1023,214 @@ function ProjectTaskManager({
     </div>
   );
   return (
-    <div className="p-2 pt-5">
+    <div className="p-2 pl-1 smd:pl-2 pt-5">
       <h2 className="text-xl font-bold mb-4">{projectTitle}</h2>
       <div>{renderTasks(tasks)}</div>
       {loading && <LoadingIndicator />}
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            setShowinfo1(true);
+          }}
+          className="mt-4 mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
+
+function ShowingInfo({ setRefresh, showinfoofid, id, setShowinfo }) {
+  const [title, setTitle] = useState("");
+  const [description, setDiscription] = useState("");
+  const [loading, setLoading] = useState(false);
+  //console.log(showinfoofid);
+  if (loading) {
+    return (
+      <div>
+        {/* <LoadingIndicator></LoadingIndicator> */}
+        <div className="flex justify-center bg-gray-50">
+          <div className="flex flex-col justify-center"></div>
+            Loading....
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {!loading && (
+        <div className=" text-slate-700 pb-2">
+          <label
+            for="email"
+            class="block mb-1 text-sm font-medium text-gray-900 "
+          >
+            subtask title
+          </label>
+          <input
+            onChange={(e) => {
+              setTitle(e.target.value);
+            }}
+            type="email"
+            id="email"
+            className="mb-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 placeholder-gray-400 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+            placeholder="you title"
+          />
+          <label
+            for="email"
+            class="block mb-1 text-sm font-medium text-gray-900 "
+          >
+            subtask description
+          </label>
+          <textarea
+            onChange={(e) => {
+              setDiscription(e.target.value);
+            }}
+            type="email"
+            id="email"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 placeholder-gray-400 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+            placeholder="your discription"
+          />
+          <button
+            onClick={async () => {
+              setLoading(true);
+              //setShowinfo(false);
+              try {
+                const res = await axios.post(
+                  `https://honoprisma.codessahil.workers.dev/addsubwork`,
+                  {
+                    work_id: showinfoofid,
+                    title: title,
+                    description: description,
+                    project_id: parseInt(id),
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                setLoading(false);
+                setRefresh((x) => !x);
+                setShowinfo(false);
+              } catch (err) {
+                setShowinfo(true);
+                alert(err);
+              }
+            }}
+            type="submit"
+            class="mt-2 text-white focus:ring-4 focus:outline-none  font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center bg-blue-600 hover:bg-blue-700 focus:ring-blue-800"
+          >
+            Submit
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShowingInfo1({ setRefresh, id, setShowinfo1 }) {
+  const [title, setTitle] = useState("");
+  const [description, setDiscription] = useState("");
+  const [loading, setLoading] = useState(false);
+  if (loading) {
+    return (
+      <div>
+        {/* <LoadingIndicator></LoadingIndicator> */}
+        <div className="flex justify-center bg-gray-50">
+          <div className="flex flex-col justify-center"></div>
+            Loading....
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {!loading && (
+        <div className=" text-slate-700 pb-2">
+          <label class="block mb-1 text-sm font-medium text-gray-900 ">
+            title
+          </label>
+          <input
+            onChange={(e) => {
+              setTitle(e.target.value);
+            }}
+            type="email"
+            id="email"
+            className="mb-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 placeholder-gray-400 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+            placeholder="you title"
+          />
+          <label
+            for="email"
+            class="block mb-1 text-sm font-medium text-gray-900 "
+          >
+            description
+          </label>
+          <textarea
+            onChange={(e) => {
+              setDiscription(e.target.value);
+            }}
+            type="email"
+            id="email"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 placeholder-gray-400 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+            placeholder="your discription"
+          />
+          <button
+            onClick={async () => {
+              setLoading(true);
+              //setShowinfo(false);
+              try {
+                const res = await axios.post(
+                  `https://honoprisma.codessahil.workers.dev/addwork`,
+                  {
+                    title: title,
+                    description: description,
+                    project_id: parseInt(id),
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                setLoading(false);
+                setRefresh((x) => !x);
+                setShowinfo1(false);
+              } catch (err) {
+                setShowinfo1(true);
+                alert(err);
+              }
+            }}
+            type="submit"
+            class="mt-2 text-white focus:ring-4 focus:outline-none  font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center bg-blue-600 hover:bg-blue-700 focus:ring-blue-800"
+          >
+            Submit
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const LoadingIndicator = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-gray-700 bg-opacity-50 z-50 bg-transparent">
+    <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+  </div>
+);
 
 export default ProjectTaskManager;

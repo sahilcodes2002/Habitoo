@@ -566,7 +566,15 @@ function Box_big() {
 
   function start() {
     if (!intervalRef.current) {
-      starttime.current = new Date(); // Set start time
+
+      if(!localStorage.getItem('starttime')){
+        starttime.current = new Date();
+        localStorage.setItem('starttime',starttime.current.toISOString());
+      } else {
+        starttime.current = new Date(localStorage.getItem('starttime')); // Parse back into Date object
+    }
+       // Set start time
+
       intervalRef.current = setInterval(() => {
         gettime();
       }, 1000);
@@ -581,6 +589,7 @@ function Box_big() {
 
   function reset() {
     clearInterval(intervalRef.current);
+    localStorage.removeItem('starttime');
     intervalRef.current = null;
     elapsedtime.current = 0;
     sets("00");
@@ -625,6 +634,12 @@ function Box_big() {
   }
 
   useEffect(() => {
+    if(localStorage.getItem('starttime')){
+      start();
+      setstartedwatch(true);
+      setwatch(true);
+      setstop(false);
+    }
     return () => clearInterval(intervalRef.current); // Cleanup interval on component unmount
   }, []);
 
@@ -759,6 +774,10 @@ function Box_big() {
                   );
                   setLoading(false);
                   setsavingwindow(false);
+                  setwatch(false);
+                  setstop(false);
+                  setstartedwatch(false);
+                  reset();
                 } catch (err) {
                   //console.log(err);
                   setLoading(false);

@@ -316,6 +316,7 @@ export function Dashboardnotes() {
                     localStorage.removeItem("token");
                     localStorage.removeItem("userinfo");
                     localStorage.removeItem("allusers");
+                    localStorage.removeItem("starttime");
                     navigate("/signin");
                   }}
                   className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"

@@ -12,9 +12,7 @@ function WorkDurationGraph({ data }) {
   const calculatePercentage = (hoursWorked, minsWorked) => {
     const totalMinutesWorked = hoursWorked * 60 + minsWorked;
     const percentage = (totalMinutesWorked / (24 * 60)) * 100;
-    if(percentage > 100){
-      percentage = 100;
-    }
+    
     return percentage;
   };
 

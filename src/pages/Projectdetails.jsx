@@ -35,7 +35,7 @@ export function ProjectDetails() {
     fetchProjectData();
 
     const intervalId = setInterval(async () => {
-      if (projectdata1 != null) {
+      if (projectdata1 != null && invitedusers.length>0) {
         //console.log(projectdata1);
         const dd = await checktoupdate();
         //console.log(dd);

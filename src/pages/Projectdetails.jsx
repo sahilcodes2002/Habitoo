@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -23,32 +23,74 @@ export function ProjectDetails() {
   const [showinfo, setShowinfo] = useState(false);
   const [showinfo1, setShowinfo1] = useState(false);
 
+
+
+
+  const invitedUsersRef = useRef(invitedusers);
+
+  // Update ref whenever invitedusers state changes
+  useEffect(() => {
+    invitedUsersRef.current = invitedusers;
+  }, [invitedusers]);
+
   useEffect(() => {
     if (!localStorage.getItem("token")) {
       navigate("/");
     }
-    setLoading(true);
-    fetchAllUsers();
-    fetchInvitedUsers();
-    //console.log(invitedusers);
 
-    fetchProjectData();
+    var intervalId = null;
 
-    const intervalId = setInterval(async () => {
-      if (projectdata1 != null && invitedusers.length>0) {
-        //console.log(projectdata1);
-        const dd = await checktoupdate();
-        //console.log(dd);
-        if (dd == true) {
-          fetchProjectData();
-          fetchAllUsers();
-          fetchInvitedUsers();
-        }
-      }
-    }, 20000);
+    async function start() {
+      setLoading(true);
+      await fetchAllUsers();
+      await fetchProjectData();
+      
+      fetchInvitedUsers().then(() => {
+        intervalId = setInterval(async () => {
+          console.log(invitedUsersRef.current.length); // This will always reflect the latest value
+          if (projectdata1 != null && invitedUsersRef.current.length > 0) {
+            const dd = await checktoupdate();
+            if (dd === true) {
+              fetchProjectData();
+              fetchAllUsers();
+              fetchInvitedUsers();
+            }
+          }
+        }, 20000);
+      });
+    }
+
+    start();
 
     return () => clearInterval(intervalId);
   }, [refresh]);
+
+  // useEffect(() => {
+  //   if (!localStorage.getItem("token")) {
+  //     navigate("/");
+  //   }
+  //   setLoading(true);
+  //   fetchAllUsers();
+  //   fetchInvitedUsers();
+  //   //console.log(invitedusers);
+
+  //   fetchProjectData();
+
+  //   const intervalId = setInterval(async () => {
+  //     if (projectdata1 != null && invitedusers.length>0) {
+  //       //console.log(projectdata1);
+  //       const dd = await checktoupdate();
+  //       //console.log(dd);
+  //       if (dd == true) {
+  //         fetchProjectData();
+  //         fetchAllUsers();
+  //         fetchInvitedUsers();
+  //       }
+  //     }
+  //   }, 20000);
+
+  //   return () => clearInterval(intervalId);
+  // }, [refresh]);
 
   async function checktoupdate() {
     if (projectdata1 || projectdata1 != null) {
